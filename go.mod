@@ -1,8 +1,8 @@
-module github.com/martinxsliu/protoc-gen-graphql
+module github.com/animeapis/protoc-gen-graphql
 
-go 1.15
+go 1.19
 
 require (
-	github.com/golang/protobuf v1.4.1
-	google.golang.org/protobuf v1.25.0
+	github.com/golang/protobuf v1.5.2
+	google.golang.org/protobuf v1.28.1
 )

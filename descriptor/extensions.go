@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	graphqlpb "github.com/martinxsliu/protoc-gen-graphql/protobuf/graphql"
+	graphqlpb "github.com/animeapis/protoc-gen-graphql/protobuf/graphql"
 )
 
 func getFileOptions(file *descriptorpb.FileDescriptorProto) *graphqlpb.FileOptions {

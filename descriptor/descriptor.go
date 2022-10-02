@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	graphqlpb "github.com/martinxsliu/protoc-gen-graphql/protobuf/graphql"
+	graphqlpb "github.com/animeapis/protoc-gen-graphql/protobuf/graphql"
 )
 
 type File struct {

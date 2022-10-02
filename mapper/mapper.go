@@ -2,14 +2,15 @@ package mapper
 
 import (
 	"fmt"
-	"github.com/martinxsliu/protoc-gen-graphql/parameters"
 	"os"
 	"strings"
 
+	"github.com/animeapis/protoc-gen-graphql/parameters"
+
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/martinxsliu/protoc-gen-graphql/descriptor"
-	"github.com/martinxsliu/protoc-gen-graphql/graphql"
+	"github.com/animeapis/protoc-gen-graphql/descriptor"
+	"github.com/animeapis/protoc-gen-graphql/graphql"
 )
 
 type Mapper struct {
