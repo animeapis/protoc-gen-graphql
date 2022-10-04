@@ -3,7 +3,7 @@
 type ProtocGenGraphqlTestBasic_ScalarFields {
   stringField: String!
   bytesField: String!
-  int32Field: Float!
+  int32Field: Int!
   uint32Field: Float!
   sint32Field: Float!
   fixed32Field: Float!

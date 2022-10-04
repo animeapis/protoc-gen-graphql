@@ -5,6 +5,8 @@ package protoc_gen_graphql.test.grpc;
 import "graphql/options.proto";
 import "grpc/data.proto";
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 // This is a comment attached to the Service service.
 // This is its second line.
 //

@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/animeapis/protoc-gen-graphql/parameters"
+	"github.com/golang/protobuf/proto"
 
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/animeapis/protoc-gen-graphql/descriptor"
 	"github.com/animeapis/protoc-gen-graphql/graphql"
+
+	"google.golang.org/genproto/googleapis/api/annotations"
 )
 
 type Mapper struct {
@@ -243,11 +246,18 @@ func (m *Mapper) buildMessageMapper(message *descriptor.Message, input bool) {
 		return fmt.Sprintf("`%s` represents the `%s` map in `%s`.", typeName, fieldName, parentTypeName)
 	}
 
+	isRequest := strings.HasSuffix(message.FullName, "Request")
+	for i := message.Parent; i != nil && !isRequest; i = i.Parent {
+		isRequest = strings.HasSuffix(i.FullName, "Request")
+	}
+
 	typeName := m.ObjectNames[message.FullName]
-	mapper.Object = &graphql.Object{
-		Name:        typeName,
-		Description: getComments(typeName),
-		Fields:      m.graphqlFields(message, false),
+	if !m.Params.DetectRequestMessages || !isRequest {
+		mapper.Object = &graphql.Object{
+			Name:        typeName,
+			Description: getComments(typeName),
+			Fields:      m.graphqlFields(message, false),
+		}
 	}
 	if input {
 		typeName = m.InputNames[message.FullName]
@@ -258,11 +268,23 @@ func (m *Mapper) buildMessageMapper(message *descriptor.Message, input bool) {
 		}
 	}
 
-	var oneofMappers []*OneofMapper
-	for _, oneof := range message.Oneofs {
-		oneofMappers = append(oneofMappers, m.buildOneofMapper(oneof, input))
+	if !m.Params.DetectRequestMessages || !(isRequest && !input) {
+		var oneofMappers []*OneofMapper
+		for _, oneof := range message.Oneofs {
+			oneOfMapper := m.buildOneofMapper(oneof, input)
+
+			// DIRTY WORKAROUND: THE INPUT MAPPER HAS NO UNION AND MIGHT OVERWRITE A NON-INPUT MAPPER WHICH INSTEAD DOES HAVE A UNION DEFINED.
+			for _, i := range mapper.Oneofs {
+				if i.Descriptor.Proto.Name == oneOfMapper.Descriptor.Proto.Name && oneOfMapper.Union == nil {
+					oneOfMapper.Union = i.Union
+					oneOfMapper.Objects = i.Objects
+				}
+			}
+
+			oneofMappers = append(oneofMappers, oneOfMapper)
+		}
+		mapper.Oneofs = oneofMappers
 	}
-	mapper.Oneofs = oneofMappers
 
 	for _, field := range message.Proto.GetField() {
 		if field.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
@@ -302,7 +324,12 @@ func (m *Mapper) graphqlFields(message *descriptor.Message, input bool) []*graph
 			continue
 		}
 
-		fields = append(fields, m.graphqlField(field, input))
+		gqlField := m.graphqlField(field, input)
+		if gqlField == nil {
+			continue
+		}
+
+		fields = append(fields, gqlField)
 
 		if field.ForeignKey != nil && !input {
 			referencedObjectName, ok := m.ObjectNames[field.ForeignKey.FullName]
@@ -346,6 +373,21 @@ func (m *Mapper) graphqlField(f *descriptor.Field, input bool) *graphql.Field {
 		return field
 	}
 
+	if proto.HasExtension(f.Proto.GetOptions(), annotations.E_FieldBehavior) {
+		if e, err := proto.GetExtension(f.Proto.GetOptions(), annotations.E_FieldBehavior); err == nil {
+			for _, i := range e.([]annotations.FieldBehavior) {
+				switch i {
+				case annotations.FieldBehavior_REQUIRED:
+					field.Modifiers = field.Modifiers | graphql.TypeModifierNonNull
+				case annotations.FieldBehavior_OUTPUT_ONLY, annotations.FieldBehavior_IMMUTABLE:
+					if input {
+						return nil
+					}
+				}
+			}
+		}
+	}
+
 	proto := f.Proto
 	nullableScalars := m.nullableScalars(f, input)
 
@@ -357,10 +399,17 @@ func (m *Mapper) graphqlField(f *descriptor.Field, input bool) *graphql.Field {
 		}
 
 	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT, descriptorpb.FieldDescriptorProto_TYPE_DOUBLE,
-		descriptorpb.FieldDescriptorProto_TYPE_INT32, descriptorpb.FieldDescriptorProto_TYPE_UINT32, descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+		descriptorpb.FieldDescriptorProto_TYPE_UINT32, descriptorpb.FieldDescriptorProto_TYPE_SINT32,
 		descriptorpb.FieldDescriptorProto_TYPE_FIXED32, descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
 
 		field.TypeName = graphql.ScalarFloat.TypeName()
+		if !nullableScalars {
+			field.Modifiers = graphql.TypeModifierNonNull
+		}
+
+	case descriptorpb.FieldDescriptorProto_TYPE_INT32:
+
+		field.TypeName = graphql.ScalarInt.TypeName()
 		if !nullableScalars {
 			field.Modifiers = graphql.TypeModifierNonNull
 		}
@@ -418,14 +467,8 @@ func (m *Mapper) graphqlField(f *descriptor.Field, input bool) *graphql.Field {
 }
 
 func (m *Mapper) graphqlSpecialTypes(field *graphql.Field, protoTypeName string) *graphql.Field {
-	if protoTypeName == ".google.protobuf.Timestamp" && m.Params.TimestampTypeName != "" {
-		field.TypeName = m.Params.TimestampTypeName
-	}
-	if protoTypeName == ".google.protobuf.Duration" && m.Params.DurationTypeName != "" {
-		field.TypeName = m.Params.DurationTypeName
-	}
-	if protoTypeName == ".google.protobuf.Struct" && m.Params.StructTypeName != "" {
-		field.TypeName = m.Params.StructTypeName
+	if wellKnown, ok := m.Params.MapWellKnownTypes[protoTypeName]; ok {
+		field.TypeName = wellKnown
 	}
 
 	if m.Params.WrappersAsNull {
@@ -491,6 +534,8 @@ func (m *Mapper) buildOneofMapper(oneof *descriptor.Oneof, input bool) *OneofMap
 	if !input {
 		return mapper
 	}
+
+	mapper = &OneofMapper{Descriptor: oneof}
 
 	var inputFields []*graphql.Field
 	for _, field := range oneof.Fields {
@@ -676,11 +721,13 @@ func (m *Mapper) graphqlFieldFromMethod(method *descriptor.Method) *graphql.Fiel
 		TypeName:    m.MessageMappers[method.Proto.GetOutputType()].Object.Name,
 		Arguments:   arguments,
 		Directives:  method.Options.GetDirective(),
+		Modifiers:   graphql.TypeModifierNonNull,
 	}
 	if method.Proto.Options.GetDeprecated() {
 		field.Directives = append(field.Directives, "deprecated")
 	}
-	return field
+
+	return m.graphqlSpecialTypes(field, method.Proto.GetOutputType())
 }
 
 type GraphqlTypeNameParts struct {
@@ -692,12 +739,14 @@ type GraphqlTypeNameParts struct {
 }
 
 func (m *Mapper) buildGraphqlTypeName(parts *GraphqlTypeNameParts) string {
-	var b strings.Builder
+	components := []string{}
 
-	if parts.Namespace != "" {
-		b.WriteString(parts.Namespace)
-	} else {
-		b.WriteString(CamelCaseSlice(strings.Split(parts.Package, ".")))
+	if !m.Params.DisableAllPrefixes {
+		if parts.Namespace != "" {
+			components = append(components, parts.Namespace)
+		} else {
+			components = append(components, CamelCaseSlice(strings.Split(parts.Package, ".")))
+		}
 	}
 
 	for i, name := range parts.TypeName {
@@ -705,17 +754,23 @@ func (m *Mapper) buildGraphqlTypeName(parts *GraphqlTypeNameParts) string {
 			name = strings.TrimSuffix(name, "Entry")
 		}
 
-		b.WriteString("_")
-		b.WriteString(CamelCase(name))
-	}
-	if parts.IsProtoMap {
-		b.WriteString("Entry")
-	}
-	if parts.Input {
-		b.WriteString("Input")
+		components = append(components, CamelCase(name))
 	}
 
-	return strings.TrimPrefix(b.String(), m.Params.TrimPrefix)
+	name := strings.Join(components, "_")
+
+	if parts.IsProtoMap {
+		name += "Entry"
+	}
+	if parts.Input {
+		name += "Input"
+	}
+
+	for _, prefix := range m.Params.TrimPrefixes {
+		name = strings.TrimPrefix(name, prefix)
+	}
+
+	return name
 }
 
 func (m *Mapper) referenceName(service *descriptor.Service) string {

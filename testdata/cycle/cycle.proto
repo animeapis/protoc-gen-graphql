@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package protoc_gen_graphql.test.cycle;
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 message A {
   B b = 1;
 }

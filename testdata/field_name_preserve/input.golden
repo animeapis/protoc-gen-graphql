@@ -5,14 +5,14 @@ extend type Query {
 }
 
 type ProtocGenGraphqlTestBasic_FooService_Query {
-  BarMethod(input: ProtocGenGraphqlTestBasic_ScalarFieldsInput!): ProtocGenGraphqlTestBasic_ScalarFields
-  BazMethod(input: ProtocGenGraphqlTestBasic_ScalarFieldsInput!): ProtocGenGraphqlTestBasic_ScalarFields
+  BarMethod(input: ProtocGenGraphqlTestBasic_ScalarFieldsInput!): ProtocGenGraphqlTestBasic_ScalarFields!
+  BazMethod(input: ProtocGenGraphqlTestBasic_ScalarFieldsInput!): ProtocGenGraphqlTestBasic_ScalarFields!
 }
 
 type ProtocGenGraphqlTestBasic_ScalarFields {
   string_field: String!
   bytes_field: String!
-  int32_field: Float!
+  int32_field: Int!
   uint32_field: Float!
   sint32_field: Float!
   fixed32_field: Float!
@@ -28,7 +28,7 @@ type ProtocGenGraphqlTestBasic_ScalarFields {
 input ProtocGenGraphqlTestBasic_ScalarFieldsInput {
   string_field: String
   bytes_field: String
-  int32_field: Float
+  int32_field: Int
   uint32_field: Float
   sint32_field: Float
   fixed32_field: Float

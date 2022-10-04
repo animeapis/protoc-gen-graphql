@@ -4,6 +4,8 @@ package protoc_gen_graphql.test.grpc;
 
 import "graphql/options.proto";
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 service Service {
   option (graphql.service) = { reference_name: "service_name" };
 

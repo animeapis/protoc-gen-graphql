@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package protoc_gen_graphql.test.basic;
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 message ScalarFields {
   string string_field = 1;
   bytes bytes_field = 2;

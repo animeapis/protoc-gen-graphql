@@ -18,20 +18,20 @@ const (
 )
 
 type Parameters struct {
-	TimestampTypeName string
-	DurationTypeName  string
-	StructTypeName    string
-	WrappersAsNull    bool
-	InputMode         string
-	JS64BitType       string
-	RootTypePrefix    *string
-	FieldName         string
-	TrimPrefix        string
-	NullableListTypes bool
+	WrappersAsNull        bool
+	InputMode             string
+	JS64BitType           string
+	RootTypePrefix        *string
+	FieldName             string
+	TrimPrefixes          []string
+	NullableListTypes     bool
+	DisableAllPrefixes    bool
+	MapWellKnownTypes     map[string]string
+	DetectRequestMessages bool
 }
 
 func NewParameters(parameter string) (*Parameters, error) {
-	params := &Parameters{}
+	params := &Parameters{MapWellKnownTypes: make(map[string]string)}
 
 	parts := strings.Split(parameter, ",")
 	for _, part := range parts {
@@ -47,25 +47,14 @@ func NewParameters(parameter string) (*Parameters, error) {
 		}
 
 		switch key {
-		case "timestamp":
-			if value == "" {
-				return nil, fmt.Errorf("missing type for timestamp")
-			}
-			params.TimestampTypeName = value
-		case "duration":
-			if value == "" {
-				return nil, fmt.Errorf("missing type for duration")
-			}
-			params.DurationTypeName = value
-		case "struct":
-			if value == "" {
-				return nil, fmt.Errorf("missing type for struct")
-			}
-			params.StructTypeName = value
 		case "null_wrappers":
 			params.WrappersAsNull = true
 		case "nullable_list_types":
 			params.NullableListTypes = true
+		case "disable_all_prefixes":
+			params.DisableAllPrefixes = true
+		case "detect_request_messages":
+			params.DetectRequestMessages = true
 		case "input_mode":
 			params.InputMode = value
 		case "js_64bit_type":
@@ -78,7 +67,19 @@ func NewParameters(parameter string) (*Parameters, error) {
 			}
 			params.FieldName = value
 		case "trim_prefix":
-			params.TrimPrefix = value
+			params.TrimPrefixes = append(params.TrimPrefixes, value)
+		case "map_wellknown_type":
+			pair := strings.Split(value, "=")
+			if len(pair) != 2 {
+				return nil, fmt.Errorf("maps of well-known type must be in the format of 'key=value'")
+			}
+
+			name := pair[0]
+			if !strings.HasPrefix(name, ".") {
+				name = "." + name
+			}
+
+			params.MapWellKnownTypes[name] = pair[1]
 		}
 	}
 

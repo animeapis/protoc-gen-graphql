@@ -14,6 +14,7 @@ func runProtoc(protoFiles []string, parameter string) error {
 	args := append([]string{
 		"-I", "testdata",
 		"-I", "protobuf",
+		"-I", "api-common-protos",
 		"--plugin=bin/protoc-gen-graphql",
 		fmt.Sprintf("--graphql_out=%s:testdata", parameter),
 	}, protoFiles...)
@@ -44,9 +45,19 @@ func itGeneratesTheCorrectOutput(t *testing.T, name, parameter string) {
 		}
 
 		if string(graphql) != string(expected) {
-			t.Errorf("expected %s to equal %s", graphql, expected)
+			t.Errorf("expected proto %s to match", proto)
 		}
 	}
+}
+
+func TestAPIs(t *testing.T) {
+	itGeneratesTheCorrectOutput(t, "api", strings.Join([]string{
+		"null_wrappers",
+		"disable_all_prefixes",
+		"detect_request_messages",
+		"map_wellknown_type=google.protobuf.Timestamp=DateTime",
+		"map_wellknown_type=google.protobuf.Empty=Boolean",
+	}, ","))
 }
 
 func TestBasicProtobufTypes(t *testing.T) {

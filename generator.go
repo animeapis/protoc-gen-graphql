@@ -86,7 +86,10 @@ func (g *Generator) generateFiles(params *parameters.Parameters) {
 				gqlTypes = append(gqlTypes, m.Object)
 			}
 			for _, oneof := range m.Oneofs {
-				gqlTypes = append(gqlTypes, oneof.Union)
+				if oneof.Union != nil {
+					gqlTypes = append(gqlTypes, oneof.Union)
+				}
+
 				for _, object := range oneof.Objects {
 					gqlTypes = append(gqlTypes, object)
 				}

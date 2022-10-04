@@ -1,0 +1,391 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/httpbody.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+import "graphql/options.proto";
+
+package animeshon.image.v1alpha1;
+
+option go_package = "github.com/animeapis/go-genproto/image/v1alpha1;image";
+
+service Image {
+  option (google.api.default_host) = "image.animeapis.com";
+
+  // Uploads an image through the request HttpBody.
+  rpc UploadImage(UploadImageRequest) returns (UploadImageResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/{parent=users/*/albums/*}/images:upload"
+      body: "body"
+      additional_bindings {
+        post: "/v1alpha1/{parent=organizations/*/albums/*}/images:upload"
+        body: "body"
+      }
+    };
+    option (graphql.method) = {
+      field: "uploadImage"
+      operation: "mutation"
+    };
+  }
+
+  // Imports an image from a remote web address.
+  rpc ImportImage(ImportImageRequest) returns (ImportImageResponse) {
+    option (google.api.http) = {
+      post: "/v1alpha1/{parent=users/*/albums/*}/images:import"
+      body: "*"
+      additional_bindings {
+        post: "/v1alpha1/{parent=organizations/*/albums/*}/images:import"
+        body: "*"
+      }
+    };
+    option (graphql.method) = {
+      field: "importImage"
+      operation: "mutation"
+    };
+  }
+
+  // Gets an image in binary representation with the format and size requested.
+  rpc GetImage(GetImageRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {
+      get: "/v1alpha1/{name=users/*/albums/*/images/*}"
+      additional_bindings {
+        get: "/v1alpha1/{name=organizations/*/albums/*/images/*}"
+      }
+    };
+  }
+
+  // Gets an image album.
+  rpc GetAlbum(GetAlbumRequest) returns (Album) {
+    option (google.api.http) = {
+      get: "/v1alpha1/{name=users/*/albums/*}"
+      additional_bindings {
+        get: "/v1alpha1/{name=organizations/*/albums/*}"
+      }
+    };
+    option (graphql.method) = {
+      field: "getAlbum"
+      operation: "query"
+    };
+  }
+
+  // Lists image albums with pagination.
+  rpc ListAlbums(ListAlbumsRequest) returns (ListAlbumsResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/{parent=users/*}/albums"
+      additional_bindings {
+        get: "/v1alpha1/{parent=organizations/*}/albums"
+      }
+    };
+    option (graphql.method) = {
+      field: "listAlbums"
+      operation: "query"
+    };
+  }
+
+  // Creates a new image album.
+  rpc CreateAlbum(CreateAlbumRequest) returns (Album) {
+    option (google.api.http) = {
+      post: "/v1alpha1/{parent=users/*}/albums"
+      body: "*"
+      additional_bindings {
+        post: "/v1alpha1/{parent=organizations/*}/albums"
+        body: "*"
+      }
+    };
+    option (graphql.method) = {
+      field: "createAlbum"
+      operation: "mutation"
+    };
+  }
+
+  // Deletes an existing image album.
+  rpc DeleteAlbum(DeleteAlbumRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1alpha1/{name=users/*/albums/*}"
+      additional_bindings {
+        delete: "/v1alpha1/{name=organizations/*/albums/*}"
+      }
+    };
+    option (graphql.method) = {
+      field: "deleteAlbum"
+      operation: "mutation"
+    };
+  }
+  
+  // Gets the settings of an image album.
+  rpc GetAlbumSettings(GetAlbumSettingsRequest) returns (AlbumSettings) {
+    option (google.api.http) = {
+      get: "/v1alpha1/{name=users/*/albums/*}:settings"
+      additional_bindings {
+        get: "/v1alpha1/{name=organizations/*/albums/*}:settings"
+      }
+    };
+    option (graphql.method) = {
+      field: "getAlbumSettings"
+      operation: "query"
+    };
+  }
+
+  // Updates the settings of an image album.
+  rpc UpdateAlbumSettings(UpdateAlbumSettingsRequest) returns (AlbumSettings) {
+    option (google.api.http) = {
+      post: "/v1alpha1/{settings.name=users/*/albums/*}:settings"
+      body: "*"
+      additional_bindings {
+        post: "/v1alpha1/{settings.name=organizations/*/albums/*}:settings"
+        body: "*"
+      }
+    };
+    option (graphql.method) = {
+      field: "updateAlbumSettings"
+      operation: "mutation"
+    };
+  }
+}
+
+// The image router is used to generate public links that can be routed through
+// the Animeshon CDN (Content Delivery Network) to guarantee high performance
+// and availability worldwide.
+service ImageRouter {
+  option (google.api.default_host) = "image.animeapis.com";
+  
+  // Gets the image public link address that is used to fetch images via CDN.
+  rpc GetImageRoute(GetImageRouteRequest) returns (GetImageRouteResponse) {
+    option (google.api.http) = {
+      get: "/v1alpha1/{name=users/*/albums/*/images/*}:route"
+      additional_bindings {
+        get: "/v1alpha1/{name=organizations/*/albums/*/images/*}:route"
+      }
+    };
+    option (graphql.method) = {
+      field: "getImageRoute"
+      operation: "query"
+    };
+  }
+
+  // Routes a raw request received by a CDN host to its target image.
+  rpc RouteImage(RouteImageRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {
+      get: "/v1alpha1/{host=*}/{path=**}"
+    };
+    option (graphql.method) = {
+      field: "routeImage"
+      operation: "query"
+    };
+  }
+}
+
+message Album {
+  // The album resource name.
+  string name = 1;
+
+  // The album display name.
+  string display_name = 2;
+}
+
+message AlbumSettings {
+  // The album resource name.
+  string name = 1;
+
+  // The bucket where to store resources.
+  string bucket = 2;
+
+  // Whether the album is system managed.
+  bool system_managed = 3;
+
+  // Whether images in this album show up in the search engine results.
+  bool enable_search = 4;
+
+  // Whether images in this album can be annotated.
+  bool enable_annotation = 5;
+
+  // Whether images in this album must be client-side encrypted.
+  bool enable_encryption = 6;
+
+  // Whether the content of this album is highly visible by the public such as
+  // profile pictures and banners. Highly visible albums *cannot* contain
+  // sensitive or adult images.
+  bool high_visibility = 7;
+}
+
+message UploadImageRequest {
+  // The image parent of the image. This value defaults to the user performing
+  // the upload operation if no parent is set.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The image content, represented as an HttpBody.
+  google.api.HttpBody body = 2;
+}
+
+message UploadImageResponse {
+  // The image resource name.
+  string name = 1;
+}
+
+message ImportImageRequest {
+  // The WebCache options to be used when importing an image from a public
+  // website address.
+  message WebCacheOptions {
+    // If refresh is set to true the image is imported from the remote address
+    // regardless of an existing local cache, if the fetched image does not
+    // match the existing cache the new image is stored and a new resource is
+    // created, otherwise the existing (cached) resource is returned.
+    bool refresh = 1;
+  
+    // If ignore is set to true no cache lookup is performed and the image is
+    // imported into a new resource. If both "ignore" and "refresh" are set to
+    // true then "refresh" has no effect.
+    bool ignore = 2;
+  }
+
+  // The image parent of the image. This value defaults to the user performing
+  // the import operation if no parent is set.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // A publicly-accessible image HTTP/HTTPS URL. When fetching images from
+  // HTTP/HTTPS URLs, Animeshon cannot guarantee that the request will be
+  // completed. Your request may fail if the specified host denies the
+  // request (e.g. due to request throttling or DoS prevention), or if
+  // Animeshon throttles requests to the site for abuse prevention. You should
+  // not depend on externally-hosted images for production applications.
+  string uri = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The web cache options to apply to the import request.
+  WebCacheOptions cache_options = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ImportImageResponse {
+  message ImportImageResult {
+    // The image resource name.
+    string name = 1;
+  }
+
+  message ImportImageRemoteError {
+    // The status code returned from the remote server.
+    int32 status_code = 1;
+
+    // The details related to the import failure.
+    string details = 2;
+  }
+
+  // The response is either the imported image or a remote error with details.
+  oneof response {
+    // If the import was successful this field will provide the newly created
+    // image resource name.
+    ImportImageResult result = 1;
+
+    // If the import ended up in a failure due to an error with the remote
+    // server this field will provide more details about the failure.
+    ImportImageRemoteError error = 2;
+  }
+
+  // Whether this image was found in the cache.
+  bool cache_hit = 3;
+}
+
+message GetImageRequest {
+  // The image resize bounds.
+  message ResizeBounds {
+    // The image width.
+    int32 width = 1;
+  
+    // The image height.
+    int32 height = 2;
+  }
+
+  // The image resource name.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  
+  // If content type is set and differs from the original content type the image
+  // will be converted to match the specified content type.
+  //
+  // Note: only "image/png", "image/webp", "image/jpeg" are supported values.
+  string content_type = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // The image bounding box to use for resizing. This value is normally used
+  // to request image thumbnails. If both width and height are defined then the
+  // value with smaller ratio will be used to resize the image. The resized
+  // image has the closest standard ratio to the requested width or height.
+  // If the requested ratio is larger than the original image it is ignored.
+  ResizeBounds resize = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether the image returned should be blurred. This is typically used while
+  // routing images that have been detected to contain highly sensitive or
+  // controversial content that must be censored in some or all regions.
+  bool blur = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message GetAlbumRequest {
+  // The name of the album to retrieve.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ListAlbumsRequest {
+  // The parent, which owns this collection of albums.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // If unspecified, server will pick an appropriate default.
+  int32 page_size = 2;
+
+  // The value returned from the previous call.
+  string page_token = 3;
+
+  // A filter to be applied to results.
+  string filter = 4;
+}
+
+message ListAlbumsResponse {
+  // The list of albums.
+  repeated Album albums = 1;
+
+  // A token to retrieve next page of results.
+  string next_page_token = 2;
+}
+
+message CreateAlbumRequest {
+  // The parent this album belongs to.
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The album to create.
+  Album album = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message DeleteAlbumRequest {
+  // The album to delete.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetAlbumSettingsRequest {
+  // The name of the album to retrieve settings from.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateAlbumSettingsRequest {
+  // The album settings to update.
+  AlbumSettings settings = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The field mask to determine which fields are to be updated. If empty, the
+  // server will assume all fields are to be updated.
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message GetImageRouteRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetImageRouteResponse {
+  // A routable url that points to a link address backed by the CDN.
+  string url = 1;
+}
+
+message RouteImageRequest {
+  // The host that received the request.
+  string host = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The requested path representing an opaque route.
+  string path = 2 [(google.api.field_behavior) = REQUIRED];
+}

@@ -2,6 +2,8 @@ syntax = "proto2";
 
 package protoc_gen_graphql.test.proto2;
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 message Test {
   optional string optional_field = 1;
   required string required_field = 2;

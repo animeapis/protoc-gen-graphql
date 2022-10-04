@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package protoc_gen_graphql.test.wrappers;
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 message WithEmptyList {
   repeated string canBeNullable = 1;
 }

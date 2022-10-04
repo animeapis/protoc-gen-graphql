@@ -4,6 +4,8 @@ package protoc_gen_graphql.test.wrappers;
 
 import "google/protobuf/wrappers.proto";
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 message Wrappers {
   google.protobuf.BoolValue bool_value = 1;
   google.protobuf.BytesValue bytes_value = 2;

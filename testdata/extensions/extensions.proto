@@ -4,6 +4,8 @@ package protoc_gen_graphql.test.extensions;
 
 import "graphql/options.proto";
 
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
+
 option (graphql.file).namespace = "MyPackage";
 
 service Foo {

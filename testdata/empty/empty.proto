@@ -1,1 +1,3 @@
 syntax = "proto3";
+
+option go_package = "github.com/animeapis/protoc-gen-graphql/testdata;testdata";
